@@ -783,8 +783,8 @@ def elbo_stub_old(A, P, mu, logvar):
 # ENTRAÎNEMENT (Algorithme 1)
 # ---------------------------------------------------------------------
 
-def train_deep_lpbm_GCN(A, Q, seed=RANDOM_STATE, results_dir=None, negetive_sampling=False, neg_ratio=5):
-    device = torch.device("cpu")
+def train_deep_lpbm_GCN(A, Q, seed=RANDOM_STATE, results_dir=None, negetive_sampling=False, neg_ratio=5, hidden_override=None, lr_override=None):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     A_t = torch.tensor(A, dtype=torch.float32, device=device)
     best = {"elbo": -np.inf, "eta": None, "Pi": None}
     if negetive_sampling:
@@ -798,9 +798,10 @@ def train_deep_lpbm_GCN(A, Q, seed=RANDOM_STATE, results_dir=None, negetive_samp
     else:
         edges_pos = None
         neg_pairs_all = None
+
     for s in range(NUM_SEEDS):
         params = {"Q": Q, "seed": seed + s, "device": device,
-                  "hidden": HIDDEN_LAYERS_GCN, "init_lr": LEARNING_RATE}
+                  "hidden": hidden_override if hidden_override is not None else HIDDEN_LAYERS_GCN, "init_lr": lr_override if lr_override is not None else LEARNING_RATE}
         
         init_encoder_phase(A, Q, params, results_dir)
 
@@ -855,12 +856,12 @@ def train_deep_lpbm_GCN(A, Q, seed=RANDOM_STATE, results_dir=None, negetive_samp
 
 
 
-def train_deep_lpbm_GCNEncoder(A, Q, seed=RANDOM_STATE, results_dir=None, negetive_sampling=False, neg_ratio=5):
+def train_deep_lpbm_GCNEncoder(A, Q, seed=RANDOM_STATE, results_dir=None, negetive_sampling=False, neg_ratio=5, hidden_override=None, lr_override=None):
     """
     Entraîne un modèle Deep LPBM avec encodeur GCN probabiliste (version PyG).
     - Utilise la nouvelle classe GCN basée sur GCNConv (entrée sparse edge_index).
     """
-    device = torch.device("cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     torch.manual_seed(seed)
     
     # Convertit la matrice dense A en format edge_index pour PyG
@@ -891,8 +892,7 @@ def train_deep_lpbm_GCNEncoder(A, Q, seed=RANDOM_STATE, results_dir=None, negeti
 
         # Initialisation du modèle GCN (défini ailleurs avec GCNConv)
         params = {"Q": Q, "seed": seed + s, "device": device,
-                  "hidden": HIDDEN_LAYERS_GCN[0] #attend un entier
-                  , "init_lr": LEARNING_RATE}
+                  "hidden": hidden_override[0] if hidden_override is not None else HIDDEN_LAYERS_GCN[0], "init_lr": lr_override if lr_override is not None else LEARNING_RATE}
         init_encoder_phase_GCNEncoder(A, Q, params, results_dir)
         gcn = params["gcn"]  # ta classe GCN (avec GCNConv)
 
@@ -1047,7 +1047,8 @@ def collapse_small_clusters(eta, min_size_ratio=0.03):
     return eta_new
 
 
-def model_selection_over_Q(A, Q_list, subject_name="subject", seed=RANDOM_STATE, CLASS_GCN = CLASS_GCN, negetive_sampling=False, neg_ratio=5):
+def model_selection_over_Q(A, Q_list, subject_name="subject", seed=RANDOM_STATE, CLASS_GCN = CLASS_GCN, negetive_sampling=False, neg_ratio=5, hidden_override=HIDDEN_LAYERS_GCN,
+    lr_override=LEARNING_RATE):
     """
     Essaie plusieurs valeurs de Q et renvoie le meilleur modèle selon l'AIC.
     Crée un sous-dossier results/<subject_name>/Q_<Q>/ pour chaque entraînement.
@@ -1061,9 +1062,9 @@ def model_selection_over_Q(A, Q_list, subject_name="subject", seed=RANDOM_STATE,
         print(f"\n=== Entraînement pour Q = {Q} ===")
         results_dir_Q = os.path.join(results_dir_base, f"Q_{Q}")
         if CLASS_GCN == "GCN":
-            fit = train_deep_lpbm_GCN(A, Q, seed=seed, results_dir=results_dir_Q, negetive_sampling=negetive_sampling, neg_ratio=neg_ratio)
+            fit = train_deep_lpbm_GCN(A, Q, seed=seed, results_dir=results_dir_Q, negetive_sampling=negetive_sampling, neg_ratio=neg_ratio, hidden_override=hidden_override, lr_override=lr_override)
         if CLASS_GCN == "GCNEncoder":
-            fit = train_deep_lpbm_GCNEncoder(A, Q, seed=seed, results_dir=results_dir_Q, negetive_sampling=negetive_sampling, neg_ratio=neg_ratio)
+            fit = train_deep_lpbm_GCNEncoder(A, Q, seed=seed, results_dir=results_dir_Q, negetive_sampling=negetive_sampling, neg_ratio=neg_ratio, hidden_override=hidden_override, lr_override=lr_override)
         
         # collapse éventuel des petits clusters
         eta_collapsed = collapse_small_clusters(fit["eta"], min_size_ratio=0.03)
