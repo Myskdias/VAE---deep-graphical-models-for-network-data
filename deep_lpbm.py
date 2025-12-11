@@ -42,7 +42,8 @@ SUBJECT_IDX = 1
 METRIC = "AIC" # AIC, BIC, ICL
 NEG_RATIO = 5
 USE_NEGATIVE_SAMPLING = False
-
+import matplotlib
+matplotlib.use("Agg")  # backend sans fenêtrage → faible mémoire
 """
 ancienne config GCN 2 couches de l'article, marche bien sur Q=3 mais pas au dela:
 HIDDEN_LAYERS_GCN = [32]
@@ -962,7 +963,7 @@ def train_deep_lpbm_GCNEncoder(A, Q, seed=RANDOM_STATE, results_dir=None, negeti
     # === Sauvegarde des figures ===
     if results_dir is not None:
         save_all_figures(results_dir, best, Q)
-
+    print(next(params["gcn"].parameters()).device)
     print(f"[Deep LPBM + GCNConv] Q={Q} — ELBO finale : {best['elbo']:.4f}")
     return best
 

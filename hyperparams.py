@@ -44,7 +44,7 @@ def run_hyperparam_search_synthetic(
       - calcule ARI / NMI / dist_eta / dist_Pi
       - enregistre résultats dans un DataFrame
     """
-
+    Q_true = eta_true.shape[1]
     results = []
     results_root = os.path.join("results", "hyperparams")
     os.makedirs(results_root, exist_ok=True)
@@ -94,15 +94,18 @@ def run_hyperparam_search_synthetic(
 
                 # Distances η
                 eta_H = H_partial_memberships_score(eta_true, eta_pred)
-
-                # Distance Π (moyenne absolue)
-                Pi_H = np.mean(np.abs(Pi_true - Pi_pred))
+                if Pi_true.shape == Pi_pred.shape:
+                    Pi_H = np.mean(np.abs(Pi_true - Pi_pred))
+                else:
+                    Pi_H = np.nan
+                
 
                 # Enregistrement
                 results.append({
                     "hidden": str(hidden),
                     "lr": lr,
                     "neg_ratio": neg_ratio,
+                    "Q_true": Q_true,
                     "Q_selected": Q_best,
                     "ELBO": elbo,
                     "AIC": best["AIC"],
@@ -151,7 +154,7 @@ def load_synthetic_dataset(base_dir, subject_idx):
 if __name__ == "__main__":
 
     DATA_DIR = "data_synthetic/assortative"   # ou "data_synthetic/disassortative"
-    SUBJECT_IDX = 1
+    SUBJECT_IDX = 2
 
     # Chargement de A, y, eta*, Pi*
     A, y_true, eta_true, Pi_true = load_synthetic_dataset(DATA_DIR, SUBJECT_IDX)
@@ -180,5 +183,5 @@ if __name__ == "__main__":
     print("\n=========== RÉSULTATS HYPERPARAMÈTRES ===========")
     print(df)
 
-    df.to_csv("hyperparam_synthetic_results.csv", index=False)
+    df.to_csv(f"hyperparam_synthetic_results{SUBJECT_IDX}.csv", index=False)
     print("Résultats sauvegardés dans hyperparam_synthetic_results.csv")
