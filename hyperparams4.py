@@ -221,7 +221,7 @@ if __name__ == "__main__":
     Q_list = [3, 4, 5, 6]
     hidden_list = [[16], [32], [64]]
     lr_list = [5e-3, 1e-2]
-    neg_list = [3]
+    neg_list = [5]
 
     for idx in GRAPH_RANGE:
         benchmark_graph(DATA_DIR, idx, Q_list, hidden_list, lr_list, neg_list)

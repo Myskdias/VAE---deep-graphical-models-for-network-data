@@ -43,7 +43,6 @@ METRIC = "AIC" # AIC, BIC, ICL
 NEG_RATIO = 5
 USE_NEGATIVE_SAMPLING = False
 import matplotlib
-matplotlib.use("Agg")  # backend sans fenêtrage → faible mémoire
 """
 ancienne config GCN 2 couches de l'article, marche bien sur Q=3 mais pas au dela:
 HIDDEN_LAYERS_GCN = [32]
@@ -442,7 +441,8 @@ def make_debug_dir(results_dir, name="init_debug"):
 
 
 def save_init_debug_figures(A, eta0, z0, Pi0, Pi_tilde0, results_dir):
-
+    if results_dir is None:
+        return
     debug_dir = make_debug_dir(results_dir)
 
     # --- FIGURE 1 : Heatmap de eta0 ---
